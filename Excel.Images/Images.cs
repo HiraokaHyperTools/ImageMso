@@ -34,6 +34,8 @@ using System.Runtime.InteropServices;
 using ExcelDna.Integration;
 
 using Microsoft.Office.Interop.Excel;
+using Point = System.Drawing.Point;
+using Rectangle = System.Drawing.Rectangle;
 
 namespace ImageMso.Excel
 {
@@ -137,16 +139,39 @@ namespace ImageMso.Excel
                         for (int y = 0; y < dibsection.dsBmih.biHeight; y++)
                             alpha |= pBits[y * dibsection.dsBmih.biWidth + x].rgbReserved != 0;
 
+                    var pixels = new byte[4 * dibsection.dsBmih.biWidth * dibsection.dsBmih.biHeight];
+
                     // Copy each pixel byte for byte.
                     for (int x = 0; x < dibsection.dsBmih.biWidth; x++)
                         for (int y = 0; y < dibsection.dsBmih.biHeight; y++)
                         {
                             var offset = y * dibsection.dsBmih.biWidth + x;
+                            var writeAt = 4 * offset;
                             if (pBits[offset].rgbReserved != 0)
-                                image.SetPixel(x, y, Color.FromArgb(pBits[offset].rgbReserved, pBits[offset].rgbRed, pBits[offset].rgbGreen, pBits[offset].rgbBlue));
+                            {
+                                pixels[writeAt + 0] = pBits[offset].rgbBlue;
+                                pixels[writeAt + 1] = pBits[offset].rgbGreen;
+                                pixels[writeAt + 2] = pBits[offset].rgbRed;
+                                pixels[writeAt + 3] = pBits[offset].rgbReserved;
+                            }
                             else if (!alpha)
-                                image.SetPixel(x, y, Color.FromArgb(pBits[offset].rgbRed, pBits[offset].rgbGreen, pBits[offset].rgbBlue));
+                            {
+                                pixels[writeAt + 0] = pBits[offset].rgbBlue;
+                                pixels[writeAt + 1] = pBits[offset].rgbGreen;
+                                pixels[writeAt + 2] = pBits[offset].rgbRed;
+                                pixels[writeAt + 3] = 255;
+                            }
                         }
+
+                    var bitmapData = image.LockBits(new Rectangle(Point.Empty, image.Size), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+                    try
+                    {
+                        Marshal.Copy(pixels, 0, bitmapData.Scan0, pixels.Length);
+                    }
+                    finally
+                    {
+                        image.UnlockBits(bitmapData);
+                    }
                 }
                 return image;
             }
