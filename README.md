@@ -19,6 +19,6 @@ Open either xll file from Released zip.
 
 Allow Excel to execute xll file in this session.
 
-Wait 5 or 6 minutes.
+Wait for 5 or 6 minutes.
 
 _Microsoft Office Icons - ImageMSO Gallery_ will open.
